@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../../ProgrammingLanguages/c"
+		},
+		{
+			"path": "../../../../../../../usr/share/doc/glibc-doc-reference/html"
+		},
+		{
+			"path": "../../../../../../../usr/include"
+		},
+		{
+			"path": "../../../../../../../usr/include/sys"
+		}
+	],
+	"settings": {}
+}
