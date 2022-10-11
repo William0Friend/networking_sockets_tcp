@@ -4,8 +4,13 @@
 #include <sys/socket.h>
 //socket_in structure, ipv4 version of the generic socket_addr
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
+#include <time.h>
+#define SIZE100K 100000
+#define MY_SOCK_PATH "/home/break/"
 //could use 
 /*
 #include <netinet/tcp.h>
@@ -46,47 +51,55 @@ struct sockaddr_in_mine{
   */
 
 int main(){
-    int sock, length, cli, sent;
-    struct sockaddr_in server, client;
-    char message[] = "hello from socket programming hel! moo wah ha ha ha!";
+    //int sockfd = 0, cli = 0, i = 0, numrv = 0;
+    int sockfd = 0, length = 0, clifd = 0, sent = 0, numrv = 0;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_addr_size;
+    char message[] = "hello from socket programming hel! moo wah ha ha ha! We're connected buddy";
+    char msg[SIZE100K];
 //create socket connection, check for socket connection error, if good let that data flow
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
+    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
     {
         perror("socket: failed to connect, ain't no data a'flowin'!");
-        return EXIT_FAILURE;
-    }
+        exit(EXIT_FAILURE);
+     }
+       printf("socket retrieve success\n");
 //create socket sddress
 //server_mine.sin_family = AF_INET;
 //server_mine.sin_port = htons(8889);
 //server_mine.sin_addr.s_addr = INADDR_ANY;
 
-
-//create socket sddress
-server.sin_family = AF_INET;
-server.sin_port = htons(8889);
-server.sin_addr.s_addr = INADDR_ANY;
 //zero out sin_zero to pad the segement. 
 // Padding is so the the semegemt has breathing room to cast freely to different types. 
 //bzero(&server.sin_zero, 8);
 //This zeros out the padding
-bzero(&server, sizeof(struct sockaddr_in));
+memset(&server_addr, '0', sizeof(server_addr));
+
+//create socket sddress
+server_addr.sin_family = AF_INET;
+server_addr.sin_port = htons(10001);
+server_addr.sin_addr.s_addr = INADDR_ANY;
+
+strncpy(server_addr.sin_path, MY_SOCK_PATH, sizeof(server_addr.sin_path))
 //we need to give a value to bind, so that it knows what size variable it will need to bind to.
 //In our case we need the same size as our socket address, example '127.0.0.1:80' or 'sin_addr:sin_port'
 length = sizeof(struct sockaddr_in);
 //bind
-//
 //if true, bind socket connection, check for socket bind error, if false
 //If binding fails print error
-if((bind(sock, (struct sockaddr *) &server, length)) == -1 )
+if((bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr))) == -1 )
 {
-    perror("bind error, you've been ghosted");
-    return EXIT_FAILURE;
+ //   perror("bind error, you've been ghosted");
+   // exit(EXIT_FAILURE);
+   handle_error("bind server");
 }
-if ((listen(sock, 2))== -1)
+
+if ((listen(sockfd, 10))== -1)
 {
-    perrer("listen is down, in space no one can hear you scream");
-    return EXIT_FAILURE;
+    perror("listen is down, in space no one can hear you scream");
+    exit(EXIT_FAILURE);
 }
+
 while(1)
 {
     /*
@@ -98,17 +111,26 @@ new socket's descriptor, or -1 for errors.
 This function is a cancellation point and therefore not marked with
 __THROW.
     */
-    if((cli = accept(sock,(struct sockaddr *)&client,&length))==-1)
+    if((clifd = accept(sockfd,(struct sockaddr *)&client,&length))==-1)
     {
         perror("accept, i refused to accept you for who you are, rejected");
         return EXIT_FAILURE;
     }
-    //we need to seed the message, after 
-    sent = send(cli, message, strlen(message), 0);
+    //we need to seed the welcome message
+    sent = send(clifd, message, strlen(message), 0);
 
     printf("Sent %d bytes to client : %s \n", sent, inet_ntoa(client.sin_addr));
 
-    close(cli);
+    //
+for(;;){
+    bzero(msg, sizeof(msg));
+    //read the message from the client and copy it to the buffer
+    read(sockfd, msg, sizeof(msg));
 }
-
+    printf("msg: %s", msg);
+}
+//close any open file descriptor
+    close(clifd);
+    close(sockfd);
+    return 0;
 }

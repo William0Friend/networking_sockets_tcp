@@ -7,13 +7,7 @@
 			"path": "../../../ProgrammingLanguages/c"
 		},
 		{
-			"path": "../../../../../../../usr/share/doc/glibc-doc-reference/html"
-		},
-		{
-			"path": "../../../../../../../usr/include"
-		},
-		{
-			"path": "../../../../../../../usr/include/sys"
+			"path": ".."
 		}
 	],
 	"settings": {
@@ -34,7 +28,10 @@
 			"*.HLA*": "hlasm",
 			"in.h": "c",
 			"*.def": "c",
-			"tcp.h": "c"
+			"tcp.h": "c",
+			"unistd.h": "c",
+			"errno.h": "c",
+			"crypt.h": "c"
 		}
 	}
 }
