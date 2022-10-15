@@ -31,7 +31,8 @@
 			"tcp.h": "c",
 			"unistd.h": "c",
 			"errno.h": "c",
-			"crypt.h": "c"
+			"crypt.h": "c",
+			"sha256.h": "c"
 		}
 	}
 }
