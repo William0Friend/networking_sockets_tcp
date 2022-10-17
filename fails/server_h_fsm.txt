@@ -1,0 +1,153 @@
+                                                                            Enter FSM:
+
+state: Wait for call 0 from above
+
+call: recursive
+  rdt_rcv(rcvpkt)
+  --------------
+      V
+
+call: next state
+  rdt_send(data)
+  --------------
+  sndpkt = make_pkt(0,data,checksum)
+  udt_send(sndpkt)
+  start_timer
+
+state: Wait for ACK0
+
+call: recursive
+  rdt_rcv(rcvpkt) && ( currupt(rcvpkt) || isACK(rcvpkt, 1) )
+  ---------------------------------
+              V
+
+call: recursive
+  timeout
+  --------
+  udt_send(sndpkt)
+  start_timer
+
+
+call: next state
+  rdt_rcv(rcvpkt) && notcurrupt(rcvpkt) && isACK(rcvpkt,0)
+  ----------------------------------
+            V
+
+
+state: Wait for call 1 from above
+
+call: recursive
+  rdt_rcv(rcvpkt)
+  -------------
+      V
+
+call: next state
+  rdt_send(data)
+  ---------------
+  sndpkt = make_pkt(1, data, checksum)
+  udt_send(sndpkt)
+  start_timer
+
+state: Wait for ACK 1
+
+call: recursive
+  rdt_rcv(rcvpkt) && (currupt(rcvpkt) || isACK(rcvpkt,0))
+  ------------------------------------------
+              V
+              
+call: recursive
+  timeout
+  ----------
+  udt_send(sndpkt)
+  start_timer
+
+call: next state
+  rdt_rcv(rcvpkt) && notcurrupt(rcvpkt) && isACK(rcvpkt,1)
+  ---------------------------------------- 
+  stop_timer
+
+
+                                                                        EXTENDED FSM:
+
+STATE: wait
+
+enter:
+
+call: recursive
+  v
+  ---------
+  base=1
+  nextseqnum=1
+
+call: recursive
+
+  rdt_send(data)
+  --------------
+  if (nextseqnum < base+N) {
+    sndpkt[nextseqnum] = make_pkt(nextseqnum,data,chksum)//checksum
+    udt_send(sndpkt[nextseqnum])
+    if(base == nextseqnum)
+      start_timer
+    nextseqnum++
+  }
+  else
+    refuse_data(data)
+
+call: recursive
+
+  timeout
+  -----------
+  start_timer
+  for(i=0; i<nextseqnum; i++) {
+    udt_send(sndpkt[base+i])
+  }
+
+call: recursive
+  rdt_rcv(rcvpkt) && notcurrupt(rcvpkt)
+  -----------------------------------
+  base = getacknum(rcvpkt)+1
+  if(base == nextseqnum)
+    stop_timer
+  else
+    start_timer
+
+call: recursive
+rdt_rcv(rcvpkt) && currupt(rcvpkt) 
+
+
+                                                              TCP sender (simplified)
+
+state: wait for event
+
+call: enter
+  v
+  --------
+  NextSeqNum = InitialSeqNum
+  SendBase = InitialSeqNum
+
+call: recursive
+  data recieved from application above
+  ----------------------
+  create segment, seq # NextSeqNum
+  pass segment to IP(ie, "send")
+  NextSeqNum = NextSeqNum + length(data)
+  if (timer currently not running)
+      start timer
+
+call: recursive
+  timeout
+  ----------
+  retransmit not-yet-acked segment with smallest seq #
+  start timer
+
+call: recursive
+  ACK recieved with ACK field value y
+  ---------------
+  if (y > SendBase) {
+    SendBase = y
+    /* SendBase-1: last cumulatively ACKED byte */
+    if (there are currently not-yet-acked segments)
+      start timer
+    else stop timer
+
+
