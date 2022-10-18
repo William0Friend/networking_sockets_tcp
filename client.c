@@ -47,10 +47,10 @@ int main(int argc, char **argv)
     //   {
     // read(stdinfd, buffer, (size_t)sizeof(buffer));
     // if (!feof(stdinFp))
-
-    // fseek(stdin, 1, SEEK_END);
-    // size_t stdinLength = ftell(stdin);
-    // fseek(stdin, 1, SEEK_SET);
+    // input length - up to 100kb
+    fseek(stdin, 1, SEEK_END);
+    size_t stdinLength = ftell(stdin);
+    fseek(stdin, 1, SEEK_SET);
     // rewind(stdin);
     // fread(buffer, 1, stdinLength, stdinFp);
     //    }
@@ -58,10 +58,10 @@ int main(int argc, char **argv)
     //   {p
     // read in 100KB message
      if (!feof(stdinFp))
-    fread(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, stdinFp);
+    fread(buffer, 1, (size_t)stdinLength, stdinFp);
     // write out 100kb message
      if (!feof(stdinFp))
-    fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, sockFp);
+    fwrite(buffer, 1, (size_t)stdinLength, sockFp);
     // write(sockfd,buffer,(size_t)sizeof(buffer));
     //
     //   if (!inFp)

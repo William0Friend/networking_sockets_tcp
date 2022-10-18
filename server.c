@@ -83,9 +83,9 @@ int main(int argc, char **argv)
                  break ;
               }*/
         printf("1\n");
-        // fseek(connFp, 1, SEEK_END);
-        // connfdLength = ftell(connFp);
-        // fseek(connFp, 1, SEEK_SET);
+        fseek(connFp, 1, SEEK_END);
+        connfdLength = ftell(connFp);
+        fseek(connFp, 1, SEEK_SET);
         // rewind(connFp);
         //  fread(buffer, 1, (size_t)connfdLength, connFp) != NULL;
         // read 100kb message - 1
@@ -94,8 +94,8 @@ int main(int argc, char **argv)
         
         //read in - 100kb message
 //        if (!feof(connFp))
-//        fread(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, connFp);
-        read(dup(connfd), buffer, (size_t)(buffer-1));
+        fread(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, connFp);
+        //read(dup(connfd), buffer, (size_t)(buffer));
         printf("a1\n");
         // fflush(connFp);
         // read 100kb message - 2
@@ -104,7 +104,8 @@ int main(int argc, char **argv)
 
         // write out - 100kb message
 //        if(!feof(connFp))
-        write(dup(stdoutfd), buffer, (size_t)buffer);
+        int out = strlen(buffer);
+        //write(STDOUT_FILENO, buffer, (size_t)(out));
         //fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, stdout); // read(connfd, buffer, (size_t)COPY_BUFFER_MAXSIZE);
         printf("a2\n");
         // fflush(stdout);
@@ -114,10 +115,10 @@ int main(int argc, char **argv)
         // print 100kb message - 1
         // if((write(stdinfd, buffer, (size_t)sizeof(buffer)) > 0));
         // print 100kb message - 2
-        // for (int i = 0; i < COPY_BUFFER_MAXSIZE; i++)
-        //{
-        // printf("%c", *(buffer + i));
-        //}
+         for (int i = 0; i < out; i++)
+        {
+            printf("%c", buffer[i]);
+        }
         //        for (int i = 0; i < 1; i++)
         //        {
         printf("2\n");
