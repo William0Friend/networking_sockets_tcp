@@ -26,6 +26,7 @@ int main(int argc, char **argv)
     int bits;
     struct sockaddr_in servaddr, cliaddr;
     unsigned char *buffer = NULL;
+    int stdoutfd = fileno(stdin);
     // a1) create socket file descriptor
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     //    printf("socketing...\n");
@@ -92,16 +93,20 @@ int main(int argc, char **argv)
         // fread(buffer, 1, (size_t)connfdLength, connFp);
         
         //read in - 100kb message
-        if (!feof(connFp))
-        fread(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, connFp);
+//        if (!feof(connFp))
+//        fread(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, connFp);
+        read(dup(connfd), buffer, (size_t)(buffer-1));
+        printf("a1\n");
         // fflush(connFp);
         // read 100kb message - 2
         // if(!feof(connFp))
         //     fgets(buffer, COPY_BUFFER_MAXSIZE, connFp);
 
         // write out - 100kb message
-        // if(!feof(connFp))
-        fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, stdout); // read(connfd, buffer, (size_t)COPY_BUFFER_MAXSIZE);
+//        if(!feof(connFp))
+        write(dup(stdoutfd), buffer, (size_t)buffer);
+        //fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, stdout); // read(connfd, buffer, (size_t)COPY_BUFFER_MAXSIZE);
+        printf("a2\n");
         // fflush(stdout);
         // if(!feof(connFp)){
         //     fputs(buffer,stdout);

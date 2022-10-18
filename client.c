@@ -57,10 +57,10 @@ int main(int argc, char **argv)
     //   for (int i = 0; i < 1; i++)
     //   {p
     // read in 100KB message
-    // if (!feof(stdinFp))
+     if (!feof(stdinFp))
     fread(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, stdinFp);
     // write out 100kb message
-    // if (!feof(stdinFp))
+     if (!feof(stdinFp))
     fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, sockFp);
     // write(sockfd,buffer,(size_t)sizeof(buffer));
     //
