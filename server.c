@@ -11,11 +11,9 @@
 #define SA struct sockaddr
 #define LISTENQ 5
 #define SIZE 1024 * 10
-#define COPY_BUFFER_MAXSIZE 1024 * 100
+#define COPY_BUFFER_MAXSIZE 1024 * 110 // breathing room...
 #define MSGSIZE 20
-void sha256Checksum(unsigned char *buf);
-// unsigned char * sha256GetChecksum(unsigned char *, unsigned char *);
-void sha256GetChecksum(unsigned char *, unsigned char *);
+int e = 0; // for error check
 int main(int argc, char **argv)
 {
     // start server process
@@ -43,10 +41,16 @@ int main(int argc, char **argv)
     //    printf("listening...\n");
     client = sizeof(cliaddr);
     // infinite server loop, ctrl-c to terminate
-    for (;;)
+    while (1)
     {
 
         connfd = accept(listenfd, (SA *)&cliaddr, &client);
+        // create file pointer to easily write large amounts over socket
+        // works easier with malloc way
+        FILE *connFp = fdopen(dup(connfd), "r+"); // set file position indicator for stream pointed to by stream
+        // set pointer to begining of file for sure
+        FILE *stdoutFp = stdout; // we want our output file to be stdout
+                                 // uint64_t outFileSizeCounter = fileSize;
         int stdinfd = fileno(stdin);
         // printf("accepted client...\n");
         addr.s_addr = cliaddr.sin_addr.s_addr;
@@ -62,82 +66,61 @@ int main(int argc, char **argv)
         // print Message up to 100-110kb
         //  assign memory for the message.
         buffer = malloc(COPY_BUFFER_MAXSIZE);
+        memset(buffer, 0, (size_t)sizeof(buffer));
         // exit if buffer has error
         if (!buffer)
             exit(-1);
         // FILE *inFp = stdin;
-        // create file pointer to easily write large amounts over socket
-        // works easier with malloc way
-        FILE *inFp = fdopen(dup(connfd), "rb"); // set file position indicator for stream pointed to by stream
-        // set pointer to begining of file for sure
-        FILE *outFp = stdout; // we want our output file to be stdout
-                              // uint64_t outFileSizeCounter = fileSize;
         // fflush any symbols that may mess up our streams
-        fflush(inFp);
-        fflush(outFp);
         // read write 100k message
-        int x = 0;
-//        for (int i = 0; i < 1; i++)
-        {
-            printf("1\n");
-//            fread(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, inFp);
-                read(connfd, buffer, (size_t)COPY_BUFFER_MAXSIZE);
-/*            if (read(connfd, buffer, (size_t)sizeof(buffer)) == -1)
-            {
+        // int x = 0;
+        int connfdLength = 0;
+        //        for (int i = 0; i < 1; i++)
+        /* while(1) {
+              c = fgetc(fp) != NULL;
+              if( feof(fp) ) {
+                 break ;
+              }*/
+        printf("1\n");
+        // fseek(connFp, 1, SEEK_END);
+        // connfdLength = ftell(connFp);
+        // fseek(connFp, 1, SEEK_SET);
+        // rewind(connFp);
+        //  fread(buffer, 1, (size_t)connfdLength, connFp) != NULL;
+        // read 100kb message - 1
+        // if (!feof(connFp))
+        // fread(buffer, 1, (size_t)connfdLength, connFp);
+        
+        //read in - 100kb message
+        if (!feof(connFp))
+        fread(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, connFp);
+        // fflush(connFp);
+        // read 100kb message - 2
+        // if(!feof(connFp))
+        //     fgets(buffer, COPY_BUFFER_MAXSIZE, connFp);
 
-                switch (errno)
-                {
-                case 1:
-                    perror("case 1:\n");
-                    break;
-                case 2:
-                    perror("case 2:\n");
-                    break;
-                case 3:
-                    perror("case 3:\n");
-                    break;
-                case 4:
-                    perror("case 4:\n");
-                    break;
-                case 5:
-                    perror("case 5:\n");
-                    break;
-                case 6:
-                    perror("case 6:\n");
-                    break;
-                case 7:
-                    perror("case 7:\n");
-                    break;
-                case 8:
-                    perror("case 8:\n");
-                    break;
-                case 9:
-                    perror("case 9:\n");
-                    break;
-                default:
-                    printf("default\n");
-                    break;
-                }
-            }else {
-                break;
-            }
-*/
-            // fflush(inFp);
-            printf("1.5\n");
-        }
-
-        x = 0;
-//        for (int i = 0; i < 1; i++)
-//        {
-            printf("2\n");
-            //            x = fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, outFp);
-            write(stdinfd, buffer, (size_t)sizeof(buffer));
-            fflush(inFp);
-            fflush(stdout);
-            fflush(outFp);
-            //   printf("3\n");
-            // fflush(outFp);
-//        }
+        // write out - 100kb message
+        // if(!feof(connFp))
+        fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, stdout); // read(connfd, buffer, (size_t)COPY_BUFFER_MAXSIZE);
+        // fflush(stdout);
+        // if(!feof(connFp)){
+        //     fputs(buffer,stdout);
+        // }
+        // print 100kb message - 1
+        // if((write(stdinfd, buffer, (size_t)sizeof(buffer)) > 0));
+        // print 100kb message - 2
+        // for (int i = 0; i < COPY_BUFFER_MAXSIZE; i++)
+        //{
+        // printf("%c", *(buffer + i));
+        //}
+        //        for (int i = 0; i < 1; i++)
+        //        {
+        printf("2\n");
+        // write message to client
+        //             x = fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, outFp);
+        //   printf("3\n");
+        // fflush(outFp);
+        //        }
         //    ++i;
         //   break;
 
@@ -160,20 +143,58 @@ int main(int argc, char **argv)
             n = write(connfd, buff2, (size_t)sizeof(buff2));
         }
 
-        //        printf("EXIT 3\n");
+        printf("EXIT 3\n");
         // puts("\n");
         // b3) send sha
-        //        printf("EXIT 4\n");
+        printf("EXIT 4\n");
         //        puts("\n");
-        //        printf("EXIT 5\n");
+        printf("EXIT 5\n");
         //        puts("\n");
-    } // end for(;;)
 
+    } // END while(true)
     // close up shop
     free(buffer);
     close(connfd);
-    sleep(1);
     // printf("accepting new clients now outside while 1");
     printf("\n\n\nServer work is never done..:)\n\n\n");
     return 0;
-}
+} /*            if (read(connfd, buffer, (size_t)sizeof(buffer)) == -1)
+             {
+
+                 switch (errno)
+                 {
+                 case 1:
+                     perror("case 1:\n");
+                     break;
+                 case 2:
+                     perror("case 2:\n");
+                     break;
+                 case 3:
+                     perror("case 3:\n");
+                     break;
+                 case 4:
+                     perror("case 4:\n");
+                     break;
+                 case 5:
+                     perror("case 5:\n");
+                     break;
+                 case 6:
+                     perror("case 6:\n");
+                     break;
+                 case 7:
+                     perror("case 7:\n");
+                     break;
+                 case 8:
+                     perror("case 8:\n");
+                     break;
+                 case 9:
+                     perror("case 9:\n");
+                     break;
+                 default:
+                     printf("default\n");
+                     break;
+                 }
+             }else {
+                 break;
+             }
+ */
