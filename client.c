@@ -1,3 +1,48 @@
+/*---------------------------------------------**
+ *                                             **
+ * Author: William Friend                      **
+ * Date: 10/18/2022                             *
+ * Client.c                                     *
+ * This is the driver for the client.c sockets  *
+ * programming exercise.                        *
+ *                                              *
+ * This follows the standard sequence           *
+ * socket                                       *
+ * connect                                      *
+ *                                              *
+ * Client runs it's sequence once reading       *
+ * from stdin and writing to the connection     *
+ *                                              *
+ * The max input size is 100kb                  *
+ *                                              *
+ * Client then recieves a response from the     *
+ * server and prints that out                   *
+ *                                              *
+ * Client then ends it's session                *
+ *                                              *
+ *
+ * 
+ * IMPORTANT:
+ * functionality not complete,
+ * at the moment the client needs a ctrl^c signal
+ * to terminate 
+ *
+ *  Server otherwise works fine, however the <EOF>
+ * is not terminating the fread() sequence
+ * 
+ * Otherwise,
+ * 
+ * This does everything that is expected of it
+ * This works on two seperate computers
+ * It prints the clients ip above message
+ * It uses sys/types.h and sys/socket.h
+ * It is posix compliant since,
+ * it basicaly only uses gcc, c, and glibc
+ * It reads, stores, and prints up to 100KB
+ * Then it sends recieve message
+ *  
+ *---------------------------------------------*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,20 +93,24 @@ int main(int argc, char **argv)
     // read(stdinfd, buffer, (size_t)sizeof(buffer));
     // if (!feof(stdinFp))
     // input length - up to 100kb
-    fseek(stdin, 1, SEEK_END);
-    size_t stdinLength = ftell(stdin);
-    fseek(stdin, 1, SEEK_SET);
-    // rewind(stdin);
+    //fseek(stdin, 1, SEEK_END);
+    //size_t stdinLength = ftell(stdin);
+    //fseek(stdin, 1, SEEK_SET);
+    //rewind(stdin);
     // fread(buffer, 1, stdinLength, stdinFp);
     //    }
     //   for (int i = 0; i < 1; i++)
     //   {p
     // read in 100KB message
-     if (!feof(stdinFp))
-    fread(buffer, 1, (size_t)stdinLength, stdinFp);
+     //if (!feof(stdinFp))
+    
+    fread(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, stdinFp);
     // write out 100kb message
-     if (!feof(stdinFp))
-    fwrite(buffer, 1, (size_t)stdinLength, sockFp);
+     //if (!feof(stdinFp))
+    fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, sockFp);
+
+    fflush(stdin);
+    fflush(sockFp);
     // write(sockfd,buffer,(size_t)sizeof(buffer));
     //
     //   if (!inFp)
@@ -71,9 +120,6 @@ int main(int argc, char **argv)
     // x = fwrite(buffer, 1, (size_t)COPY_BUFFER_MAXSIZE, outFp);
     //    }
     // fd struct and fd int for stdout and printing message
-    // int stdoutfd = fileno(stdout);
-    // sha256Checksum(buffer);
-    // printf("\n 1st message sent, anticipating response \n");
     printf("sent 100kb mesage\n");
     char buffer2[MSGSIZE];
     bzero(buffer2, sizeof(buffer2));
