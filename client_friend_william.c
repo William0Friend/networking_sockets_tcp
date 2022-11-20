@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     rewind(stdinFp);
     fwrite(buffer, 1, (size_t)fileSize, sockFp);//write 100kb to socket
     char end[2] = "\n\0";
-    fwrite(end, sizeof(char), (size_t)end, sockFp);//append null terminator?
+    fwrite(end, sizeof(char), (size_t)end, sockFp);;//append null terminator?
 //+++++++++++++++++++++++++++++++++++++++++++++    
     fflush(stdin);
     fflush(sockFp);

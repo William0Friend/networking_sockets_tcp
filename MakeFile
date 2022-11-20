@@ -1,0 +1,14 @@
+iPORT := 65001
+iIP  := 127.0.0.1
+
+client2: client.o
+	gcc  client2.o -o client2 -l md -g
+
+client2.o: client.c
+	gcc -c client2.c -o client2.o
+
+server2: server.o
+	gcc server2.o -o server2 -g
+
+server2.o: server.c
+	gcc -c server2.c -o server2.c

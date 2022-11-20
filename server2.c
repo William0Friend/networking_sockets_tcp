@@ -1,136 +1,278 @@
+/*--------------------------------------------*
+ *                                             *
+ * Author: William Friend                      *
+ * Date: 10/18/2022                            *
+ * Server.c                                    *
+ * This is the driver for the server.c sockets *
+ *  programming exercise.                      *
+ *                                             *
+ * This follows the standard sequence          *
+ * socket                                      *
+ * bind                                        *
+ * listen                                      *
+ * accept                                      *
+ *                                             *
+ * Server runs an infinate loop reading from   *
+ * clients and recieving messages of up to     *
+ * 100kb                                       *
+ *                                             *
+ * Server then sends a client a response       *
+ *                                             *
+ * Server's session runs inifinately
+ * 
+ *
+ * IMPORTANT:
+ * Problem with ftell() on server side
+ * ftell is not giving me the correct size
+ * I get -1 when on client this gives correct size
+ * If I could get the size of the clients message somehow
+ * this would work perfectly
+ * I wanted the sleep() to make the server wait long enough to 
+ * get the connfd/sockfd(client side/server side) stream full
+ * before I tried to get the size, but it is only returning -1
+ * functionality not complete,
+ * at the moment the client needs a ctrl^c signal
+ * to terminate 
+ * so basically the length it is measuring isn't long enough
+ * 
+ * I can make the message print at any size by making the
+ * first fread too large of a size
+ * but then I need to ctrl-c on client for the server to print the messages
+ * 
+ * 
+ * Server otherwise works fine, however the <EOF>
+ * is not terminating the fread() sequence
+ * 
+ * 
+ * 
+ * 
+ * Otherwise,
+ * 
+ * 
+ * This does everything that is expected of it
+ * This works on two seperate computers
+ * It prints the clients ip above message
+ * It uses sys/types.h and sys/socket.h
+ * It is posix compliant since,
+ * it basicaly only uses gcc, c, and glibc
+ * It reads, stores, and prints up to 100KB
+ * Then it sends recieve message
+ * 
+ *  
+ * 
+ * 
+ * 
+ * 
+ *---------------------------------------------**/
+
+
+// Libraries needed
 #include <stdio.h>
-#include <stdlib.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-//socket_in structure, ipv4 version of the generic socket_addr
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <string.h>
+#include <strings.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <unistd.h>
+#include <sha2.h>
 #include <errno.h>
-#include <time.h>
-#define SIZE100K 100000
-#define MY_SOCK_PATH "/home/break/"
-//could use 
-/*
-#include <netinet/tcp.h>
-#include <sys/un.h>
-#include <netinet/udp.h>
-*/
-/*
-//in sys/socket.h
-struct sockaddr?{
-  unsigned short sa_family; //address family, in this case we want AF_INET
-  char sa_sata[14];  // Family specific addrees information, can fit ipv4 
-}
-struct in_addr{
-  unsigned long s_addr; //internet 32 bit address
-};
-*/
-  /*
-  struct sockaddr_in
-  {
-    __SOCKADDR_COMMON (sin_);
-    in_port_t sin_port;         // Port number.  
-    struct in_addr sin_addr;        // Internet address.  
+#include <error.h>
+#define SA struct sockaddr
+#define LISTENQ 5
+#define SIZE 1024 * 10
+#define COPY_BUFFER_MAXSIZE 1024 * 110 // breathing room...
+#define MSGSIZE 30
 
-    // Pad to size of `struct sockaddr'.  
-    unsigned char sin_zero[sizeof (struct sockaddr) -
-               __SOCKADDR_COMMON_SIZE -
-               sizeof (in_port_t) -
-               sizeof (struct in_addr)];
-  };
 
-struct sockaddr_in_mine{
-  unsigned short sin_family; //address family, in this case we want AF_INET
-  unsigned short sin_port; // assign the port
-  struct in_addr sin_addr; // assign the ip address
-  char sin_zero[8]; //errors
-};
 
-  */
-
-int main(){
-    //int sockfd = 0, cli = 0, i = 0, numrv = 0;
-    int sockfd = 0, length = 0, clifd = 0, sent = 0, numrv = 0;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t client_addr_size;
-    char message[] = "hello from socket programming hel! moo wah ha ha ha! We're connected buddy";
-    char msg[SIZE100K];
-//create socket connection, check for socket connection error, if good let that data flow
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
+// Driver code
+int main(int argc, char **argv)
+{
+    int e, listenfd, connfd;// file descriptors
+    socklen_t client;//client ip address
+    struct in_addr addr;//copy of ip address
+    struct sockaddr_in servaddr, cliaddr;//create stuct
+    char* buffer =  malloc(COPY_BUFFER_MAXSIZE);
+    
+    int sizeBuffer = COPY_BUFFER_MAXSIZE; 
+    bzero(buffer, sizeBuffer);
+//+++++++++++++++++++++++++++++++++++++++++++++    
+    listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if(listenfd < 0)
     {
-        perror("socket: failed to connect, ain't no data a'flowin'!");
-        exit(EXIT_FAILURE);
-     }
-       printf("socket retrieve success\n");
-//create socket sddress
-//server_mine.sin_family = AF_INET;
-//server_mine.sin_port = htons(8889);
-//server_mine.sin_addr.s_addr = INADDR_ANY;
-
-//zero out sin_zero to pad the segement. 
-// Padding is so the the semegemt has breathing room to cast freely to different types. 
-//bzero(&server.sin_zero, 8);
-//This zeros out the padding
-memset(&server_addr, '0', sizeof(server_addr));
-
-//create socket sddress
-server_addr.sin_family = AF_INET;
-server_addr.sin_port = htons(10001);
-server_addr.sin_addr.s_addr = INADDR_ANY;
-
-strncpy(server_addr.sin_path, MY_SOCK_PATH, sizeof(server_addr.sin_path))
-//we need to give a value to bind, so that it knows what size variable it will need to bind to.
-//In our case we need the same size as our socket address, example '127.0.0.1:80' or 'sin_addr:sin_port'
-length = sizeof(struct sockaddr_in);
-//bind
-//if true, bind socket connection, check for socket bind error, if false
-//If binding fails print error
-if((bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr))) == -1 )
-{
- //   perror("bind error, you've been ghosted");
-   // exit(EXIT_FAILURE);
-   handle_error("bind server");
-}
-
-if ((listen(sockfd, 10))== -1)
-{
-    perror("listen is down, in space no one can hear you scream");
-    exit(EXIT_FAILURE);
-}
-
-while(1)
-{
-    /*
-Await a connection on socket FD.
-When a connection arrives, open a new socket to communicate with it,
-set *ADDR (which is *ADDR_LEN bytes long) to the address of the connecting
-peer and *ADDR_LEN to the address's actual length, and return the
-new socket's descriptor, or -1 for errors.
-This function is a cancellation point and therefore not marked with
-__THROW.
-    */
-    if((clifd = accept(sockfd,(struct sockaddr *)&client,&length))==-1)
-    {
-        perror("accept, i refused to accept you for who you are, rejected");
-        return EXIT_FAILURE;
+      perror("Error while creatin the socket\n");// socket file descriptor
     }
-    //we need to seed the welcome message
-    sent = send(clifd, message, strlen(message), 0);
 
-    printf("Sent %d bytes to client : %s \n", sent, inet_ntoa(client.sin_addr));
-
-    //
-for(;;){
-    bzero(msg, sizeof(msg));
-    //read the message from the client and copy it to the buffer
-    read(sockfd, msg, sizeof(msg));
-}
-    printf("msg: %s", msg);
-}
-//close any open file descriptor
-    close(clifd);
-    close(sockfd);
+//+++++++++++++++++++++++++++++++++++++++++++++    
+    bzero(&servaddr, sizeof(servaddr));//zero out our memory
+    servaddr.sin_family = AF_INET; 
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);//assign ip, with correct endianess
+    servaddr.sin_port = htons(atoi(argv[1])); //assign port, with correct endianess
+    inet_pton(AF_INET, argv[1], &servaddr.sin_addr);//convert port number to ipv4
+    //+++++++++++++++++++++++++++++++++++++++++++++    
+    if(bind(listenfd, (SA *)&servaddr, sizeof(servaddr)) < 0)
+        perror("error with bind \n");// bind to the socket
+//+++++++++++++++++++++++++++++++++++++++++:++++    
+   if(listen(listenfd, LISTENQ) < 0)
+    perror("error with listen\n");// start listening for new clients
+//+++++++++++++++++++++++++++++++++++++++++++++    
+    while (1)// infinite server loop, ctrl-c to terminate
+    {
+//+++++++++++++++++++++++++++++++++++++++++++++    
+        connfd = accept(listenfd, (SA *)&cliaddr, &client);
+        if(connfd < 0)
+        {
+          perror("error with accept");// create file pointer to easily write large amounts over socket
+        }
+          //+++++++++++++++++++++++++++++++++++++++++++++    
+        
+        addr.s_addr = cliaddr.sin_addr.s_addr;
+        //get clients address from struct
+        char * buf = argv[1];
+        
+        printf("Client Address = %s\n", inet_ntop(AF_INET, &cliaddr.sin_addr, addr.s_addr, sizeof(addr.s_addr);
+        if (inet_ntop(AF_INET, &addr, buf, sizeof(buf)) == NULL)//
+        {
+            printf("\nMessage from 0.0.0.0\n ");
+            printf("\nMessage from  %s:\n ", argv[1]);
+            printf("\nMessage from  %s:\n ", buf);
+        }else{
+          printf("\nMessage from  %s:\n ", buf);
+        }
+        //+++++++++++++++++++++++++++++++++++++++++++++
+        int stdoutFp = fileno(stdout);
+        int count = 0;
+        int f = 0;
+        //printf("printf %s\n", buffer);
+        
+        e = read(connfd, buffer, --sizeBuffer); 
+        if(e == EOF)
+        {
+            perror("error first read\n");
+        } else {
+            printf("read successful\n");
+          
+        }
+       //print 100kb message 
+        printf("\t%s\n", buffer);
+//+++++++++++++++++++++++++++++++++++++++++++++    
+//+++++++++++++++++++++++++++++++++++++++++++++  
+        char buff2[] = "Message Recieved";
+        if(( e = write(connfd, buff2, sizeof(buff2)) == -1 ))
+        {
+          perror("error second write");//write user message
+        } else {
+          printf("%s\n", buff2);
+        }
+//+++++++++++++++++++++++++++++++++++++++++++++    
+        //printf("Sent Message recieved to client\n\0");
+        printf("\n\n\n\n\nAccepting new clients..\n\0");
+    } // END while(true)
+    
+    // close up shop
+    free(buffer);
+    close(connfd);
+    printf("\n\n\nServer work is never done...\n\n\n\0");
     return 0;
+} 
+/*
+// unsigned char * sha256GetChecksum(unsigned char * buf, unsigned char * buf_copy){
+void sha256GetChecksum(unsigned char *buf, unsigned char *buf_copy)
+{
+
+    SHA2_CTX ctx;
+    uint8_t results[SHA256_DIGEST_LENGTH];
+    int n;
+    n = strlen(buf);
+    SHA256Init(&ctx);
+    SHA256Update(&ctx, (uint8_t *)buf, n);
+    SHA256Final(results, &ctx);
+    
+     printf("0x");
+     for (n = 0; n < SHA256_DIGEST_LENGTH; n++){
+             printf("%02x", results[n]);
+             buf_copy[n] = results[n];
+     }
+     putchar('\n');
+      
 }
+void sha256Checksum(unsigned char *buf)
+{
+
+    SHA2_CTX ctx;
+    uint8_t results[SHA256_DIGEST_LENGTH];
+    int n;
+    n = strlen(buf);
+    SHA256Init(&ctx);
+    SHA256Update(&ctx, (uint8_t *)buf, n);
+    SHA256Final(results, &ctx);
+    
+    printf("0x");
+    for (n = 0; n < SHA256_DIGEST_LENGTH; n++)
+        printf("%02x", results[n]);
+    putchar('\n');
+    
+    //     Alternately, the helper functions could be used in the following way:
+    
+    //           uint8_t output[SHA256_DIGEST_STRING_LENGTH];
+    //           char *buf = "abc";
+
+    //           printf("0x%s\n", SHA256Data(buf, strlen(buf), output));
+    
+}
+*/
+
+        //e = 1; 
+        /*
+        while ((e = read(connfd, &buffer, sizeof(char) )) != 0)
+            {
+              if(e == -1)
+              {
+                perror("bad read\n");
+              }
+                write(STDOUT_FILENO, buffer, sizeBuffer);  
+                  //if(e == 0) 
+                  //  break;
+            }
+                //if(e == -1)
+                //perror("bad write\n");
+            //if(e == sizeBuffer)
+            //{ 
+              //  goto next; 
+            //}
+            printf("E: %d \n", e);
+        //printf("%s\n", buffer);
+        */
+
+        /*
+        while( ( e = read(connfd, buffer, sizeof(buffer)) != EOF ) )
+        {
+            
+            write(stdoutFp, buffer, sizeof(buffer));
+            //printf("\n\tcount: %d\n", count);
+            if( f == (sizeof(buffer)-1) )
+            {
+              //printf("\n\tcount: %d\n", count);
+              break;
+            }
+        }
+        */   
+
+        //printf("%s\n", buffer);
+        //
+        /*write replaced with above printf
+        
+        e = write(stdoutFp, &buffer, --sizeBuffer);
+        if(e == EOF){
+            perror("bad write\n");
+        }else{
+        printf("write succesful\n");
+        }
+        //if(( e = write(stdoutFp, buffer, sizeof(buffer)) == -1))
+        //{    
+        //    perror("error first write");
+        //}else{
+        //    //printf("%s\n", buffer);
+        //}
+        */
