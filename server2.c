@@ -22,43 +22,17 @@
  * 
  *
  * IMPORTANT:
- * Problem with ftell() on server side
- * ftell is not giving me the correct size
- * I get -1 when on client this gives correct size
- * If I could get the size of the clients message somehow
- * this would work perfectly
- * I wanted the sleep() to make the server wait long enough to 
- * get the connfd/sockfd(client side/server side) stream full
- * before I tried to get the size, but it is only returning -1
- * functionality not complete,
- * at the moment the client needs a ctrl^c signal
- * to terminate 
- * so basically the length it is measuring isn't long enough
  * 
- * I can make the message print at any size by making the
- * first fread too large of a size
- * but then I need to ctrl-c on client for the server to print the messages
- * 
- * 
- * Server otherwise works fine, however the <EOF>
- * is not terminating the fread() sequence
- * 
- * 
- * 
- * 
- * Otherwise,
- * 
- * 
- * This does everything that is expected of it
- * This works on two seperate computers
- * It prints the clients ip above message
- * It uses sys/types.h and sys/socket.h
- * It is posix compliant since,
- * it basicaly only uses gcc, c, and glibc
- * It reads, stores, and prints up to 100KB
- * Then it sends recieve message
- * 
- *  
+ *Ok, just fyi I don't expect this to change my grade.
+
+I just wanted to show you I didn't give up on this yet, and it has been bugging me that it didn't work. I handed in a really stripped down version to hit the due date. But to do this, I had a lot of c library stuff to read.
+
+I still have to figure out how to get the client ip from the struct and print it, but otherwise, the non extra credit part works now, I figured out the read write problem, and the sha works with the sample file of under 10kb but not my 20kb and higher. Ill keep working on it whenever I get time.
+
+All the experiments i've been doing to try and figure c tcp servers out is at this github repo:
+
+
+https://github.com/William0Friend/networking_sockets_tcp  
  * 
  * 
  * 
@@ -78,6 +52,8 @@
 #include <sha2.h>
 #include <errno.h>
 #include <error.h>
+#include <assert.h>
+
 #define SA struct sockaddr
 #define LISTENQ 5
 #define SIZE 1024 * 10
@@ -85,9 +61,9 @@
 #define MSGSIZE 30
 
 
-void sha256GetChecksum(unsigned char *buf, unsigned char *buf_copy);
+void sha256GetChecksum(unsigned char *buf, uint8_t * buf_copy);
 void sha256Checksum(unsigned char *buf);
-
+void printSha256(uint8_t * results);
 // Driver code
 int main(int argc, char **argv)
 {
@@ -108,7 +84,7 @@ int main(int argc, char **argv)
 
 //+++++++++++++++++++++++++++++++++++++++++++++    
     bzero(&servaddr, sizeof(servaddr));//zero out our memory
-    servaddr.sin_family = AF_INET; 
+    servaddr.sin_family = AF_INET;  
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);//assign ip, with correct endianess
     servaddr.sin_port = htons(atoi(argv[1])); //assign port, with correct endianess
     inet_pton(AF_INET, argv[1], &servaddr.sin_addr);//convert port number to ipv4
@@ -134,6 +110,8 @@ int main(int argc, char **argv)
         char * buf = argv[1];
         
        // printf("Client Address = %s\n", inet_ntop(AF_INET, &cliaddr.sin_addr, cliaddr.sin_addr.s_addr,sizeof(cliaddr.sin_addr.s_addr));
+        printf("\nMessage from 0.0.0.0\n ");
+       /*
         if (inet_ntop(AF_INET, &addr, buf, sizeof(buf)) == NULL)//
         {
             printf("\nMessage from 0.0.0.0\n ");
@@ -142,6 +120,7 @@ int main(int argc, char **argv)
         }else{
           printf("\nMessage from  %s:\n ", buf);
         }
+        */
         //+++++++++++++++++++++++++++++++++++++++++++++
         int stdoutFp = fileno(stdout);
         int count = 0;
@@ -153,23 +132,40 @@ int main(int argc, char **argv)
         {
             perror("error first read\n");
         } else {
-            printf("read successful\n");
-          
+         //   printf("read successful\n");
+          printf("\n");
         }
        //print 100kb message 
         printf("\t%s\n", buffer);
 //+++++++++++++++++++++++++++++++++++++++++++++    
         //create sha256
-        unsigned char * shaBufferServer[50] = {'0'};
+        uint8_t shaBufferServer[SHA256_DIGEST_STRING_LENGTH];
         sha256GetChecksum(buffer, shaBufferServer);
-        printf("%s\n",shaBufferServer);
+//        printf("%s\n",shaBufferServer);
+//         printf("\n");//print the message
+//         printSha256(shaBufferServer);
 //+++++++++++++++++++++++++++++++++++++++++++++  
         char buff2[] = "Message Recieved";
+
         if(( e = write(connfd, buff2, sizeof(buff2)) == -1 ))
         {
           perror("error second write");//write user message
         } else {
-          printf("%s\n", buff2);
+//          printf("%s\n", buff2);
+          printf("\n");
+        }
+//+++++++++++++++++++++++++++++++++++++++++++++    
+//+++++++++++++++++++++++++++++++++++++++++++++  
+        //unsigned char * shaBufferServer[50] = {'0'};
+        // send sha to server then print
+        if(( e = write(connfd, shaBufferServer, sizeof(shaBufferServer)) == -1 ))
+        {
+          perror("error sha write");//write user message
+        } else {
+          //assert(shaBufferServer[0] == shaBufferClient[0]);
+          printf("Server Version of Client Sha:\n");//print the message
+          printSha256(shaBufferServer);
+          printf("\n");//print the message
         }
 //+++++++++++++++++++++++++++++++++++++++++++++    
         //printf("Sent Message recieved to client\n\0");
@@ -182,8 +178,20 @@ int main(int argc, char **argv)
     printf("\n\n\nServer work is never done...\n\n\n\0");
     return 0;
 } 
+
+void printSha256(uint8_t * results)
+{
+     int n;
+     printf("0x");
+     for (n = 0; n < SHA256_DIGEST_LENGTH; n++){
+             printf("%02x", results[n]);
+           //  buf_copy[n] = results[n];
+     }
+     putchar('\n');
+
+}
 // unsigned char * sha256GetChecksum(unsigned char * buf, unsigned char * buf_copy){
-void sha256GetChecksum(unsigned char *buf, unsigned char *buf_copy)
+void sha256GetChecksum(unsigned char * buf, uint8_t * buf_copy)
 {
 
     SHA2_CTX ctx;
@@ -194,14 +202,16 @@ void sha256GetChecksum(unsigned char *buf, unsigned char *buf_copy)
     SHA256Update(&ctx, (uint8_t *)buf, n);
     SHA256Final(results, &ctx);
     
-     printf("0x");
+     //printf("0x");
      for (n = 0; n < SHA256_DIGEST_LENGTH; n++){
-             printf("%02x", results[n]);
+         //    printf("%02x", results[n]);
              buf_copy[n] = results[n];
+             assert(buf_copy[n] == results[n]);
      }
      putchar('\n');
       
 }
+
 void sha256Checksum(unsigned char *buf)
 {
 
