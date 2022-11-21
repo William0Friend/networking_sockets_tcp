@@ -85,6 +85,8 @@
 #define MSGSIZE 30
 
 
+void sha256GetChecksum(unsigned char *buf, unsigned char *buf_copy);
+void sha256Checksum(unsigned char *buf);
 
 // Driver code
 int main(int argc, char **argv)
@@ -131,7 +133,7 @@ int main(int argc, char **argv)
         //get clients address from struct
         char * buf = argv[1];
         
-        printf("Client Address = %s\n", inet_ntop(AF_INET, &cliaddr.sin_addr, addr.s_addr, sizeof(addr.s_addr);
+       // printf("Client Address = %s\n", inet_ntop(AF_INET, &cliaddr.sin_addr, cliaddr.sin_addr.s_addr,sizeof(cliaddr.sin_addr.s_addr));
         if (inet_ntop(AF_INET, &addr, buf, sizeof(buf)) == NULL)//
         {
             printf("\nMessage from 0.0.0.0\n ");
@@ -157,6 +159,10 @@ int main(int argc, char **argv)
        //print 100kb message 
         printf("\t%s\n", buffer);
 //+++++++++++++++++++++++++++++++++++++++++++++    
+        //create sha256
+        unsigned char * shaBufferServer[50] = {'0'};
+        sha256GetChecksum(buffer, shaBufferServer);
+        printf("%s\n",shaBufferServer);
 //+++++++++++++++++++++++++++++++++++++++++++++  
         char buff2[] = "Message Recieved";
         if(( e = write(connfd, buff2, sizeof(buff2)) == -1 ))
@@ -176,7 +182,6 @@ int main(int argc, char **argv)
     printf("\n\n\nServer work is never done...\n\n\n\0");
     return 0;
 } 
-/*
 // unsigned char * sha256GetChecksum(unsigned char * buf, unsigned char * buf_copy){
 void sha256GetChecksum(unsigned char *buf, unsigned char *buf_copy)
 {
@@ -221,7 +226,6 @@ void sha256Checksum(unsigned char *buf)
     //           printf("0x%s\n", SHA256Data(buf, strlen(buf), output));
     
 }
-*/
 
         //e = 1; 
         /*

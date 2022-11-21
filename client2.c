@@ -57,13 +57,15 @@
 #define COPY_BUFFER_MAXSIZE 1024 * 100
 #define MSGSIZE 19
 
+void sha256GetChecksum(unsigned char *buf, unsigned char *buf_copy);
+void sha256Checksum(unsigned char *buf);
+
 int main(int argc, char **argv)
 {   
     int e, sockfd;// file descriptors
     int len;
     struct sockaddr_in servaddr, cliaddr;
     //create stuct
-    printf("Hello server");
     
     fflush(stdout);
 //+++++++++++++++++++++++++++++++++++++++++++++    
@@ -98,42 +100,50 @@ int main(int argc, char **argv)
     
     int stdinfd = fileno(stdin);
     
+    //read in message 
     read(stdinfd, buffer,(size_t)(sizeBuffer-1));
-    //    printf("read successful\n");
-    //}
-    //printf("%s\n", buffer);
-    //printf("%s\n",buffer);
-
+    //write out message
     write(sockfd, buffer, (size_t)(sizeBuffer-1));
     if( e == -1){
         perror("write error()");
     }
-    //else{
-    //    printf("write successful\n");
-    //}
-      //perror("first write no good\n");
-
 //+++++++++++++++++++++++++++++++++++++++++++++    
-    printf("sent 100kb mesage\n");
-//next:
+    //printf("sent 100kb mesage\n");
     char buffer2[MSGSIZE];
     bzero(buffer2, sizeof(buffer2));
-//+++++++++++++++++++++++++++++++++++++++++++++    
     if((e = read(sockfd, buffer2, (size_t)sizeof(buffer2)) == -1))
     {
         perror("second read no good");//read "Message Recieved from server"
-    }else{
-        printf("read succesful\n");
     }
-//+++++++++++++++++++++++++++++++++++++++++++++    
     printf("%s\n", buffer2);//print the message
+//+++++++++++++++++++++++++++++++++++++++++++++    
+    //get checksum
+    unsigned char shaBufferClient[50] = {'0'};
+    sha256GetChecksum(buffer, shaBufferClient);
+    printf("%s\n", shaBufferClient);
+
+//+++++++++++++++++++++++++++++++++++++++++++++    
+    //get checksum from server
+    /*
+    unsigned char bufferSha[SHA256_DIGEST_STRING_LENGTH];
+    bzero(bufferSha, sizeof(bufferSha));
+    if((e = read(sockfd, bufferSha, (size_t)sizeof(buffer2)) == -1))
+    {
+        perror("second read no good");//read "Message Recieved from server"
+    }
+    */
+//+++++++++++++++++++++++++++++++++++++++++++++    
+    //compare checksums
+//+++++++++++++++++++++++++++++++++++++++++++++    
+    //print whether checksums match
+//+++++++++++++++++++++++++++++++++++++++++++++    
     // close shop
     free(buffer);
     close(sockfd);
     return 0;
 }
 
-/*
+
 // unsigned char * sha256GetChecksum(unsigned char * buf, unsigned char * buf_copy){
 void sha256GetChecksum(unsigned char *buf, unsigned char *buf_copy)
 {
@@ -178,7 +188,7 @@ void sha256Checksum(unsigned char *buf)
     //           printf("0x%s\n", SHA256Data(buf, strlen(buf), output));
     
 }
-*/
+
    /* 
      e = 1;
     while((e = read(STDIN_FILENO, &buffer, sizeof(char))) != 0); 
