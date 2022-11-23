@@ -1,9 +1,20 @@
-iPORT := 65001
-iIP  := 127.0.0.1
+CC=gcc
+CFLAGS=-Wall
+LDLIBS=-lmd
 
-client2: client2.c
-	gcc -c client2.c -o client2 -l md -g
+OBJECTS=client2.o server2.o
+SOURCES=client2.c server2.c
 
-server2: server2.c
-	gcc -c server2.c -o server2 -l md -g
+#what make does by default
+#.c:
+#$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(TARGET_ARCH) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+both: $(OBJECTS)
+        $(CC) $(SOURCES) -o $@ client server $(LDLIBS) #$^:
+
+
+clean:
+    rm -f *~ *.o client server
+
+
 
